@@ -1,0 +1,50 @@
+tasks:
+  install-dependencies:
+    name: Install Go Dependencies
+    description: Download Go module dependencies for the samples
+    command: |
+      go mod download
+    triggeredBy:
+      - postDevcontainerStart
+
+  build-samples:
+    name: Build All Samples
+    description: Build all sample applications using make bins
+    command: |
+      make bins
+    triggeredBy:
+      - manual
+
+  run-tests:
+    name: Run Tests
+    description: Run all unit tests with race detection
+    command: |
+      make test
+    triggeredBy:
+      - manual
+
+  run-checks:
+    name: Run Code Quality Checks
+    description: Run staticcheck, errcheck, and workflowcheck
+    command: |
+      make staticcheck && make errcheck && make workflowcheck
+    triggeredBy:
+      - manual
+
+services:
+  temporal-server:
+    name: Temporal Server
+    description: Start Temporal Server stack (PostgreSQL, Elasticsearch, Temporal, UI)
+    commands:
+      start: |
+        docker compose up -d
+      ready: |
+        timeout 120 bash -c 'until curl -sf http://localhost:7233 > /dev/null 2>&1; do
+          echo "Waiting for Temporal Server on port 7233..."
+          sleep 2
+        done'
+        echo "Temporal Server is ready"
+      stop: |
+        docker compose down
+    triggeredBy:
+      - postDevcontainerStart
